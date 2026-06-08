@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sicurezza & Allarmi – MNC Impianti Elettrici</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+  :root {
+    --acc: #c8d400;
+    --acc-dim: rgba(200,212,0,0.13);
+    --acc-glow: rgba(200,212,0,0.55);
+    --bg: #000;
+    --bg2: #080808;
+    --bg3: #0d0d0d;
+    --text: #ddd;
+    --muted: #777;
+    --mono: 'Courier New', monospace;
+    --sans: 'Rajdhani', sans-serif;
+    --red: #ff3a3a;
+    --red-dim: rgba(255,58,58,0.12);
+    --red-glow: rgba(255,58,58,0.45);
+    --blue: #00aaff;
+    --blue-dim: rgba(0,170,255,0.12);
+    --blue-glow: rgba(0,170,255,0.45);
+  }
+
+  html { scroll-behavior:smooth; }
+  body { background:var(--bg); color:var(--text); font-family:var(--sans); overflow-x:hidden; }
+
+  /* ── GRID ── */
+  .grid-bg {
+    position:fixed; inset:0;
+    background-image:
+      linear-gradient(rgba(200,212,0,0.035) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(200,212,0,0.035) 1px,transparent 1px);
+    background-size:55px 55px;
+    pointer-events:none; z-index:0;
+  }
+  .scanlines {
+    position:fixed; inset:0;
+    background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,0.1) 3px,rgba(0,0,0,0.1) 4px);
+    pointer-events:none; z-index:1;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position:fixed; top:0; left:0; right:0; z-index:100;
+    height:68px; padding:0 48px;
+    display:flex; align-items:center; justify-content:space-between;
+    background:rgba(0,0,0,0.92);
+    border-bottom:1px solid rgba(200,212,0,0.18);
+    backdrop-filter:blur(14px);
+  }
+  .nav-logo { height:40px; filter:drop-shadow(0 0 8px rgba(200,212,0,0.5)); }
+  .nav-links { display:flex; gap:28px; list-style:none; }
+  .nav-links a {
+    color:var(--muted); text-decoration:none;
+    font-family:var(--mono); font-size:10px; letter-spacing:3px; text-transform:uppercase;
+    transition:color .2s, text-shadow .2s;
+  }
+  .nav-links a:hover { color:var(--acc); text-shadow:0 0 12px var(--acc-glow); }
+  .nav-back {
+    font-family:var(--mono); font-size:10px; letter-spacing:2px; text-transform:uppercase;
+    padding:8px 18px; border:1px solid rgba(200,212,0,0.4);
+    color:var(--acc); text-decoration:none;
+    transition:background .2s, box-shadow .2s;
+  }
+  .nav-back:hover { background:var(--acc-dim); box-shadow:0 0 16px var(--acc-glow); }
+
+  /* ── HERO ── */
+  #hero {
+    position:relative; min-height:100vh;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    text-align:center; padding:100px 24px 70px;
+    overflow:hidden; z-index:2;
+  }
+
+  /* radar animato sfondo */
+  .radar-bg {
+    position:absolute; inset:0; pointer-events:none; z-index:0;
+    display:flex; align-items:center; justify-content:center;
+    opacity:0.07;
+  }
+  .radar-ring {
+    position:absolute;
+    border-radius:50%;
+    border:1px solid var(--acc);
+    animation:radarExpand 3s ease-out infinite;
+  }
+  .radar-ring:nth-child(2) { animation-delay:.8s; }
+  .radar-ring:nth-child(3) { animation-delay:1.6s; }
+  .radar-ring:nth-child(4) { animation-delay:2.4s; }
+  @keyframes radarExpand {
+    0%   { width:60px; height:60px; opacity:.9; }
+    100% { width:900px; height:900px; opacity:0; }
+  }
+
+  /* pulse rosso al centro */
+  .hero-pulse {
+    position:absolute; top:50%; left:50%;
+    transform:translate(-50%,-50%);
+    width:800px; height:500px; border-radius:50%;
+    background:radial-gradient(ellipse, rgba(255,58,58,0.06) 0%, rgba(200,212,0,0.04) 50%, transparent 80%);
+    animation:glowPulse 5s ease-in-out infinite;
+    pointer-events:none; z-index:0;
+  }
+  @keyframes glowPulse {
+    0%,100% { transform:translate(-50%,-50%) scale(1); opacity:.7; }
+    50% { transform:translate(-50%,-50%) scale(1.1); opacity:1; }
+  }
+
+  .hero-badge {
+    font-family:var(--mono); font-size:10px; letter-spacing:6px; text-transform:uppercase;
+    color:var(--red); border:1px solid rgba(255,58,58,0.35);
+    padding:6px 18px; margin-bottom:32px; display:inline-block;
+    background:rgba(255,58,58,0.06); position:relative; z-index:2;
+    animation:badgePulse 2s ease-in-out infinite;
+  }
+  @keyframes badgePulse {
+    0%,100% { box-shadow:0 0 0 rgba(255,58,58,0); }
+    50% { box-shadow:0 0 18px rgba(255,58,58,0.3); }
+  }
+
+  .hero-title {
+    font-size:clamp(2.4rem,5.5vw,4.4rem); font-weight:700; line-height:1.05;
+    color:#fff; margin-bottom:20px; position:relative; z-index:2;
+  }
+  .hero-title .acc { color:var(--acc); text-shadow:0 0 40px var(--acc-glow); }
+  .hero-title .red { color:var(--red); text-shadow:0 0 30px var(--red-glow); }
+  .hero-sub {
+    max-width:620px; margin:0 auto 48px;
+    font-size:1.05rem; color:var(--muted); line-height:1.8;
+    position:relative; z-index:2;
+  }
+  .hero-cta {
+    display:flex; gap:16px; justify-content:center; flex-wrap:wrap;
+    position:relative; z-index:2;
+  }
+  .btn-p {
+    font-family:var(--mono); font-size:11px; letter-spacing:2px; text-transform:uppercase;
+    padding:13px 32px; background:var(--acc); color:#000; border:none;
+    cursor:pointer; text-decoration:none; font-weight:700;
+    transition:box-shadow .2s, transform .15s; display:inline-block;
+  }
+  .btn-p:hover { box-shadow:0 0 30px var(--acc-glow),0 0 60px rgba(200,212,0,0.25); transform:translateY(-2px); }
+  .btn-s {
+    font-family:var(--mono); font-size:11px; letter-spacing:2px; text-transform:uppercase;
+    padding:13px 32px; background:transparent; color:var(--acc); border:1px solid var(--acc);
+    cursor:pointer; text-decoration:none;
+    transition:background .2s, box-shadow .2s, transform .15s; display:inline-block;
+  }
+  .btn-s:hover { background:var(--acc-dim); box-shadow:0 0 18px var(--acc-glow); transform:translateY(-2px); }
+
+  /* ── DIVIDERS ── */
+  .ediv {
+    height:1px; position:relative; z-index:2;
+    background:linear-gradient(90deg,transparent,var(--acc),transparent);
+    box-shadow:0 0 8px var(--acc-glow);
+  }
+  .ediv-red {
+    height:1px; position:relative; z-index:2;
+    background:linear-gradient(90deg,transparent,var(--red),transparent);
+    box-shadow:0 0 8px var(--red-glow);
+  }
+
+  /* ── COMMON ── */
+  section { position:relative; z-index:2; }
+  .sec-label {
+    font-family:var(--mono); font-size:10px; letter-spacing:5px; text-transform:uppercase;
+    color:var(--acc); margin-bottom:10px; opacity:.8;
+  }
+  .sec-title { font-size:clamp(1.7rem,3.5vw,2.6rem); font-weight:700; color:#fff; margin-bottom:14px; }
+  .sec-title .acc { color:var(--acc); }
+  .sec-title .red { color:var(--red); }
+  .sec-line { width:56px; height:2px; background:var(--acc); margin-bottom:36px; box-shadow:0 0 10px var(--acc-glow); }
+  .sec-line-red { width:56px; height:2px; background:var(--red); margin-bottom:36px; box-shadow:0 0 10px var(--red-glow); }
+  .max-w { max-width:1180px; margin:0 auto; }
+
+  /* reveal */
+  .reveal { opacity:0; transform:translateY(22px); transition:opacity .55s ease, transform .55s ease; }
+  .reveal.visible { opacity:1; transform:translateY(0); }
+
+  /* ── SISTEMI ── */
+  #sistemi { padding:100px 48px; background:var(--bg2); border-top:1px solid rgba(200,212,0,0.08); }
+
+  .sistemi-intro {
+    max-width:740px; margin:0 auto 64px;
+    font-size:1.05rem; color:var(--muted); line-height:1.85; text-align:center;
+  }
+  .sistemi-intro strong { color:var(--acc); }
+
+  .sistemi-grid {
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(270px,1fr)); gap:2px;
+  }
+
+  .scard {
+    background:var(--bg); border:1px solid rgba(200,212,0,0.1);
+    padding:36px 28px; position:relative; overflow:hidden;
+    transition:border-color .3s, transform .2s;
+  }
+  .scard::before {
+    content:''; position:absolute; top:0; left:0; right:0; height:2px;
+    background:var(--acc); transform:scaleX(0); transform-origin:left; transition:transform .35s;
+  }
+  .scard.red-card { border-color:rgba(255,58,58,0.1); }
+  .scard.red-card::before { background:var(--red); }
+  .scard:hover { border-color:rgba(200,212,0,0.4); transform:translateY(-4px); }
+  .scard.red-card:hover { border-color:rgba(255,58,58,0.4); }
+  .scard:hover::before { transform:scaleX(1); }
+  .scard-num {
+    font-family:var(--mono); font-size:48px; font-weight:700;
+    color:rgba(200,212,0,0.1); line-height:1; margin-bottom:6px;
+  }
+  .scard.red-card .scard-num { color:rgba(255,58,58,0.1); }
+  .scard-icon { font-size:2rem; margin-bottom:14px; }
+  .scard-name { font-size:1.1rem; font-weight:700; color:#fff; margin-bottom:10px; }
+  .scard-desc { font-size:.87rem; color:var(--muted); line-height:1.7; font-family:var(--mono); }
+
+  /* ── COME FUNZIONA ── */
+  #processo { padding:100px 48px; }
+
+  .processo-steps {
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:0;
+    position:relative; margin-top:16px;
+  }
+  .processo-steps::before {
+    content:''; position:absolute; top:36px; left:10%; right:10%; height:1px;
+    background:linear-gradient(90deg,transparent,rgba(255,58,58,0.3),transparent);
+    pointer-events:none;
+  }
+  .pstep {
+    padding:32px 24px; text-align:center; position:relative;
+    border:1px solid transparent; transition:border-color .3s;
+  }
+  .pstep:hover { border-color:rgba(255,58,58,0.2); }
+  .pstep-circle {
+    width:72px; height:72px; border-radius:50%;
+    border:2px solid rgba(255,58,58,0.3);
+    display:flex; align-items:center; justify-content:center;
+    margin:0 auto 20px;
+    font-family:var(--mono); font-size:1.4rem; font-weight:700; color:var(--red);
+    background:rgba(255,58,58,0.05);
+    transition:border-color .3s, box-shadow .3s;
+  }
+  .pstep:hover .pstep-circle { border-color:var(--red); box-shadow:0 0 20px var(--red-glow); }
+  .pstep-name { font-size:1rem; font-weight:700; color:#fff; margin-bottom:10px; }
+  .pstep-desc { font-size:.83rem; color:var(--muted); line-height:1.7; font-family:var(--mono); }
+
+  /* ── PACCHETTI ── */
+  #pacchetti { padding:100px 48px; background:var(--bg3); border-top:1px solid rgba(200,212,0,0.07); }
+
+  .pacchetti-grid {
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:24px;
+    margin-top:16px;
+  }
+  .ppack {
+    border:1px solid rgba(255,58,58,0.18); background:rgba(255,58,58,0.03);
+    padding:36px 30px; position:relative; overflow:hidden;
+    transition:border-color .3s, box-shadow .3s;
+  }
+  .ppack.featured {
+    border-color:rgba(200,212,0,0.35); background:rgba(200,212,0,0.04);
+  }
+  .ppack:hover { border-color:rgba(255,58,58,0.5); box-shadow:0 0 30px rgba(255,58,58,0.07); }
+  .ppack.featured:hover { border-color:rgba(200,212,0,0.6); box-shadow:0 0 30px var(--acc-dim); }
+  .ppack-badge {
+    font-family:var(--mono); font-size:9px; letter-spacing:4px; text-transform:uppercase;
+    color:var(--red); margin-bottom:12px;
+  }
+  .ppack.featured .ppack-badge { color:var(--acc); }
+  .ppack-tipo { font-size:1.3rem; font-weight:700; color:#fff; margin-bottom:6px; }
+  .ppack-sub { font-family:var(--mono); font-size:11px; color:var(--muted); margin-bottom:24px; }
+  .ppack-price {
+    font-family:var(--mono); font-size:2.2rem; font-weight:700;
+    color:var(--red); line-height:1; margin-bottom:4px;
+  }
+  .ppack.featured .ppack-price { color:var(--acc); text-shadow:0 0 16px var(--acc-glow); }
+  .ppack-price-label {
+    font-family:var(--mono); font-size:10px; color:var(--muted);
+    letter-spacing:2px; text-transform:uppercase; margin-bottom:24px;
+  }
+  .ppack-row {
+    display:flex; justify-content:space-between; align-items:center;
+    padding:9px 0; border-bottom:1px solid rgba(255,255,255,0.05);
+    font-family:var(--mono); font-size:11px;
+  }
+  .ppack-row:last-of-type { border-bottom:none; }
+  .ppack-row .lbl { color:var(--muted); }
+  .ppack-row .vl { color:#fff; }
+  .ppack-row .vl.ok { color:var(--acc); }
+  .ppack-row .vl.no { color:#444; }
+  .ppack-footer {
+    margin-top:22px; padding:14px 16px;
+    background:rgba(200,212,0,0.05); border:1px solid rgba(200,212,0,0.12);
+    font-family:var(--mono); font-size:10px; color:var(--muted); line-height:1.6;
+  }
+  .ppack-footer strong { color:var(--acc); }
+  .featured-ribbon {
+    position:absolute; top:16px; right:-1px;
+    font-family:var(--mono); font-size:9px; letter-spacing:2px; text-transform:uppercase;
+    padding:4px 14px; background:var(--acc); color:#000; font-weight:700;
+  }
+
+  /* ── NORMATIVA ── */
+  #normativa { padding:100px 48px; }
+
+  .norm-wrap {
+    display:grid; grid-template-columns:1.1fr 1fr; gap:72px; align-items:start;
+  }
+  .norm-list { display:flex; flex-direction:column; gap:18px; margin-top:8px; }
+  .norm-item {
+    display:flex; gap:18px; align-items:flex-start;
+    padding:22px 20px; border:1px solid rgba(200,212,0,0.12);
+    background:rgba(200,212,0,0.02); transition:border-color .25s;
+  }
+  .norm-item:hover { border-color:rgba(200,212,0,0.35); }
+  .norm-code {
+    font-family:var(--mono); font-size:1rem; font-weight:700;
+    color:var(--acc); text-shadow:0 0 10px var(--acc-glow);
+    flex-shrink:0; min-width:90px; line-height:1.2;
+  }
+  .norm-title { font-size:.98rem; font-weight:700; color:#fff; margin-bottom:5px; }
+  .norm-desc { font-size:.83rem; color:var(--muted); line-height:1.65; font-family:var(--mono); }
+
+  .garanzie-box {
+    padding:36px; border:1px solid rgba(200,212,0,0.15);
+    background:rgba(200,212,0,0.025); position:sticky; top:90px;
+  }
+  .gbox-title { font-size:1.4rem; font-weight:700; color:#fff; margin-bottom:6px; }
+  .gbox-title span { color:var(--acc); }
+  .gbox-sub { font-family:var(--mono); font-size:11px; color:var(--muted); margin-bottom:24px; line-height:1.7; }
+  .gbox-row {
+    display:flex; gap:14px; align-items:flex-start; padding:12px 0;
+    border-bottom:1px solid rgba(200,212,0,0.07);
+    font-family:var(--mono); font-size:11px; color:var(--muted); line-height:1.6;
+  }
+  .gbox-row:last-child { border-bottom:none; }
+  .gbox-row::before { content:'✔'; color:var(--acc); flex-shrink:0; margin-top:1px; }
+  .gbox-row strong { color:#fff; display:block; margin-bottom:2px; }
+
+  /* ── GALLERY ── */
+  #gallery { padding:100px 48px; background:var(--bg2); border-top:1px solid rgba(200,212,0,0.07); }
+
+  .gallery-grid {
+    display:grid;
+    grid-template-columns:1.4fr 1fr 1fr;
+    grid-template-rows:300px 300px;
+    gap:3px; margin-top:16px;
+  }
+  .gphoto { position:relative; overflow:hidden; background:#111; }
+  .gphoto img {
+    width:100%; height:100%; object-fit:cover; display:block;
+    transition:transform .6s ease, filter .4s;
+    filter:grayscale(30%) brightness(.75);
+  }
+  .gphoto:hover img { transform:scale(1.07); filter:grayscale(0) brightness(1); }
+  .gphoto-overlay {
+    position:absolute; inset:0;
+    background:linear-gradient(to top, rgba(0,0,0,0.75) 0%, transparent 55%);
+    opacity:0; transition:opacity .3s;
+    display:flex; align-items:flex-end; padding:18px;
+  }
+  .gphoto:hover .gphoto-overlay { opacity:1; }
+  .gphoto-label { font-family:var(--mono); font-size:10px; letter-spacing:3px; text-transform:uppercase; color:var(--acc); }
+  .gphoto.tall { grid-row:span 2; }
+
+  /* ── CTA FINALE ── */
+  #cta-finale {
+    padding:100px 48px; text-align:center;
+    background:var(--bg3); border-top:1px solid rgba(200,212,0,0.1);
+  }
+  .cta-box {
+    max-width:700px; margin:0 auto;
+    border:1px solid rgba(200,212,0,0.2); padding:60px 48px;
+    background:rgba(200,212,0,0.02); position:relative;
+  }
+  .cta-box::before, .cta-box::after {
+    content:''; position:absolute;
+    width:30px; height:30px; border-color:var(--acc); border-style:solid;
+  }
+  .cta-box::before { top:-1px; left:-1px; border-width:2px 0 0 2px; }
+  .cta-box::after { bottom:-1px; right:-1px; border-width:0 2px 2px 0; }
+  .cta-emoji { font-size:3rem; margin-bottom:20px; }
+  .cta-title { font-size:clamp(1.6rem,3vw,2.4rem); font-weight:700; color:#fff; margin-bottom:14px; }
+  .cta-title span { color:var(--acc); }
+  .cta-sub { font-size:.93rem; color:var(--muted); line-height:1.8; margin-bottom:36px; font-family:var(--mono); }
+  .cta-contacts { display:flex; gap:20px; justify-content:center; flex-wrap:wrap; margin-top:28px; }
+  .ct-link {
+    display:flex; align-items:center; gap:12px;
+    padding:15px 22px; border:1px solid rgba(200,212,0,0.2);
+    color:#fff; text-decoration:none;
+    font-family:var(--mono); font-size:12px;
+    transition:border-color .2s, box-shadow .2s; background:rgba(200,212,0,0.03);
+  }
+  .ct-link:hover { border-color:var(--acc); box-shadow:0 0 20px rgba(200,212,0,0.12); }
+  .ct-link-label { font-size:9px; letter-spacing:3px; text-transform:uppercase; color:var(--acc); margin-bottom:3px; }
+  .ct-link-val { font-size:13px; color:#fff; }
+
+  /* ── FOOTER ── */
+  footer {
+    position:relative; z-index:2;
+    padding:28px 48px;
+    display:flex; align-items:center; justify-content:space-between;
+    border-top:1px solid rgba(200,212,0,0.1);
+  }
+  .foot-copy { font-family:var(--mono); font-size:10px; color:#333; letter-spacing:2px; }
+  .foot-tag { font-family:var(--mono); font-size:10px; color:rgba(200,212,0,0.35); letter-spacing:2px; }
+
+  /* ── RESPONSIVE ── */
+  @media(max-width:900px) {
+    nav { padding:0 20px; }
+    .nav-links { display:none; }
+    #sistemi, #processo, #pacchetti, #normativa, #gallery, #cta-finale { padding:60px 20px; }
+    .norm-wrap { grid-template-columns:1fr; gap:36px; }
+    .garanzie-box { position:static; }
+    .gallery-grid { grid-template-columns:1fr 1fr; grid-template-rows:auto; }
+    .gphoto.tall { grid-row:auto; }
+    .cta-box { padding:36px 24px; }
+    footer { flex-direction:column; gap:10px; text-align:center; padding:24px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="grid-bg"></div>
+<div class="scanlines"></div>
+
+<!-- ── NAV ── -->
+<nav>
+  <a href="mnc_homepage.html">
+    <img src="https://i.imgur.com/placeholder.png" alt="MNC" class="nav-logo"
+      onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+    <span style="display:none; font-family:'Rajdhani',sans-serif; font-weight:700; font-size:22px; color:#c8d400; letter-spacing:2px; text-shadow:0 0 12px rgba(200,212,0,0.6);">MNC</span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="mnc_homepage.html#servizi">Servizi</a></li>
+    <li><a href="mnc_civili.html">Civili</a></li>
+    <li><a href="mnc_fotovoltaico.html">Fotovoltaico</a></li>
+    <li><a href="mnc_homepage.html#contatti">Contatti</a></li>
+  </ul>
+  <a href="mnc_homepage.html" class="nav-back">← Torna Home</a>
+</nav>
+
+<!-- ── HERO ── -->
+<section id="hero">
+  <!-- Radar Background -->
+  <div class="radar-bg">
+    <div class="radar-ring"></div>
+    <div class="radar-ring"></div>
+    <div class="radar-ring"></div>
+    <div class="radar-ring"></div>
+  </div>
+  <div class="hero-pulse"></div>
+
+  <div style="position:relative; z-index:2;">
+    <div class="hero-badge">🔴 Sistema di protezione attivo</div>
+    <h1 class="hero-title">
+      Sicurezza <span class="acc">&amp; Allarmi</span><br>
+      <span class="red">Videosorveglianza</span>
+    </h1>
+    <p class="hero-sub">
+      Progettiamo e installiamo sistemi di allarme, antifurto e videosorveglianza
+      per abitazioni, uffici e aziende. Monitoraggio H24, controllo remoto da smartphone.
+    </p>
+    <div class="hero-cta">
+      <a href="tel:3801420557" class="btn-p">🔒 Richiedi Preventivo</a>
+      <a href="#sistemi" class="btn-s">Scopri i Sistemi</a>
+    </div>
+  </div>
+</section>
+
+<div class="ediv-red"></div>
+
+<!-- ── SISTEMI ── -->
+<section id="sistemi">
+  <div class="max-w">
+    <div style="text-align:center; margin-bottom:0;">
+      <p class="sec-label reveal">// 01 — Cosa installiamo</p>
+      <h2 class="sec-title reveal">I Nostri <span class="acc">Sistemi</span></h2>
+      <div class="sec-line reveal" style="margin:0 auto 24px;"></div>
+    </div>
+
+    <p class="sistemi-intro reveal">
+      Ogni installazione viene progettata su misura per le esigenze del cliente.
+      Utilizziamo apparecchiature <strong>certificate e di prima qualità</strong> con connettività IP,
+      integrabili tra loro e gestibili da remoto tramite app dedicata.
+    </p>
+
+    <div class="sistemi-grid">
+      <div class="scard reveal">
+        <div class="scard-num">01</div>
+        <div class="scard-icon">📹</div>
+        <div class="scard-name">Videosorveglianza CCTV / IP</div>
+        <div class="scard-desc">Telecamere analogiche e IP ad alta risoluzione, dome, bullet e PTZ. Registrazione continua su NVR/DVR con archiviazione locale o cloud. Visione da smartphone in tempo reale, ovunque tu sia.</div>
+      </div>
+      <div class="scard red-card reveal">
+        <div class="scard-num">02</div>
+        <div class="scard-icon">🚨</div>
+        <div class="scard-name">Antifurto & Antintrusione</div>
+        <div class="scard-desc">Centrali allarme con sensori volumetrici PIR, infrarossi doppia tecnologia, sensori magnetici su porte e finestre. Sirena interna/esterna, contatto diretto con Istituto di Vigilanza o forze dell'ordine.</div>
+      </div>
+      <div class="scard reveal">
+        <div class="scard-num">03</div>
+        <div class="scard-icon">🔐</div>
+        <div class="scard-name">Controllo Accessi</div>
+        <div class="scard-desc">Lettori badge RFID, tastiere a PIN, biometria e videocitofono IP. Apertura cancelli, porte e varchi con log degli accessi e gestione utenti da remoto. Ideale per aziende, studi e condomini.</div>
+      </div>
+      <div class="scard red-card reveal">
+        <div class="scard-num">04</div>
+        <div class="scard-icon">📱</div>
+        <div class="scard-name">Gestione da App</div>
+        <div class="scard-desc">Inserimento e disinserimento allarme, visualizzazione live delle telecamere, notifiche push in caso di evento, apertura cancello: tutto dal tuo smartphone, in tempo reale, da qualsiasi luogo.</div>
+      </div>
+      <div class="scard reveal">
+        <div class="scard-num">05</div>
+        <div class="scard-icon">🔥</div>
+        <div class="scard-name">Rilevazione Fumi & Gas</div>
+        <div class="scard-desc">Rilevatori di fumo ottici, gas metano e GPL, monossido di carbonio. Integrati nell'impianto di allarme con avviso immediato e attivazione automatica di valvole di intercettazione gas.</div>
+      </div>
+      <div class="scard red-card reveal">
+        <div class="scard-num">06</div>
+        <div class="scard-icon">🏢</div>
+        <div class="scard-name">Sistemi per Aziende</div>
+        <div class="scard-desc">Soluzioni integrate per capannoni, magazzini e strutture commerciali: videosorveglianza perimetrale, controllo accessi multi-zona, tornelli, ronde virtuali e reportistica automatica.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="ediv"></div>
+
+<!-- ── COME FUNZIONA ── -->
+<section id="processo">
+  <div class="max-w">
+    <p class="sec-label reveal">// 02 — Il nostro metodo</p>
+    <h2 class="sec-title reveal">Come <span class="red">Operiamo</span></h2>
+    <div class="sec-line-red reveal"></div>
+
+    <div class="processo-steps">
+      <div class="pstep reveal">
+        <div class="pstep-circle">🔍</div>
+        <div class="pstep-name">Sopralluogo Gratuito</div>
+        <div class="pstep-desc">Analizziamo gli spazi, i punti critici e le esigenze specifiche. Il sopralluogo è sempre gratuito e senza impegno, con analisi del rischio inclusa.</div>
+      </div>
+      <div class="pstep reveal">
+        <div class="pstep-circle">📐</div>
+        <div class="pstep-name">Progetto Su Misura</div>
+        <div class="pstep-desc">Progettiamo il sistema in base alla planimetria, alle zone da proteggere e al budget. Ti consegniamo un preventivo dettagliato prima di iniziare.</div>
+      </div>
+      <div class="pstep reveal">
+        <div class="pstep-circle">🔧</div>
+        <div class="pstep-name">Installazione Professionale</div>
+        <div class="pstep-desc">I nostri tecnici certificati installano l'impianto con cura, minimizzando i lavori murari. Cavidotti, passaggi e cablaggio ordinati e nascosti.</div>
+      </div>
+      <div class="pstep reveal">
+        <div class="pstep-circle">📱</div>
+        <div class="pstep-name">Configurazione & Test</div>
+        <div class="pstep-desc">Configuriamo app, notifiche e permessi utente. Testiamo ogni sensore, telecamera e sirena. Ti formiamo all'uso del sistema prima di partire.</div>
+      </div>
+      <div class="pstep reveal">
+        <div class="pstep-circle">🛡️</div>
+        <div class="pstep-name">Assistenza Continuativa</div>
+        <div class="pstep-desc">Disponibili per manutenzione, aggiornamenti firmware, aggiunta di dispositivi e interventi rapidi in caso di anomalie. Contratti di assistenza annuali disponibili.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="ediv"></div>
+
+<!-- ── PACCHETTI ── -->
+<section id="pacchetti">
+  <div class="max-w">
+    <p class="sec-label reveal">// 03 — Soluzioni disponibili</p>
+    <h2 class="sec-title reveal">Pacchetti <span class="acc">Sicurezza</span></h2>
+    <div class="sec-line reveal"></div>
+
+    <div class="pacchetti-grid">
+
+      <!-- BASIC -->
+      <div class="ppack reveal">
+        <div class="ppack-badge">// Residenziale base</div>
+        <div class="ppack-tipo">Starter</div>
+        <div class="ppack-sub">Appartamenti e piccole abitazioni</div>
+        <div class="ppack-price">Da €600</div>
+        <div class="ppack-price-label">chiavi in mano — IVA esclusa</div>
+        <div class="ppack-row"><span class="lbl">Telecamere</span><span class="vl">2 – 4 cam HD</span></div>
+        <div class="ppack-row"><span class="lbl">Registrazione</span><span class="vl">DVR 7 giorni</span></div>
+        <div class="ppack-row"><span class="lbl">Antifurto</span><span class="vl ok">✔ Incluso</span></div>
+        <div class="ppack-row"><span class="lbl">App mobile</span><span class="vl ok">✔ Inclusa</span></div>
+        <div class="ppack-row"><span class="lbl">Vigilanza attiva</span><span class="vl no">— Non inclusa</span></div>
+        <div class="ppack-row"><span class="lbl">Rilevatore gas/fumo</span><span class="vl no">— Opzionale</span></div>
+        <div class="ppack-footer">
+          <strong>Ideale per:</strong> appartamento, villetta, studio professionale piccolo.
+        </div>
+      </div>
+
+      <!-- PRO -->
+      <div class="ppack featured reveal">
+        <div class="featured-ribbon">Più richiesto</div>
+        <div class="ppack-badge">// Residenziale avanzato</div>
+        <div class="ppack-tipo">Professional</div>
+        <div class="ppack-sub">Ville, attività commerciali</div>
+        <div class="ppack-price">Da €1.400</div>
+        <div class="ppack-price-label">chiavi in mano — IVA esclusa</div>
+        <div class="ppack-row"><span class="lbl">Telecamere</span><span class="vl">6 – 12 cam FullHD/4K</span></div>
+        <div class="ppack-row"><span class="lbl">Registrazione</span><span class="vl">NVR 30 giorni cloud</span></div>
+        <div class="ppack-row"><span class="lbl">Antifurto</span><span class="vl ok">✔ Multi-zona</span></div>
+        <div class="ppack-row"><span class="lbl">App mobile</span><span class="vl ok">✔ Inclusa</span></div>
+        <div class="ppack-row"><span class="lbl">Vigilanza attiva</span><span class="vl ok">✔ Collegabile</span></div>
+        <div class="ppack-row"><span class="lbl">Rilevatori gas/fumo</span><span class="vl ok">✔ Inclusi</span></div>
+        <div class="ppack-footer">
+          <strong>Ideale per:</strong> villa, negozio, showroom, ristorante, studio medico o legale.
+        </div>
+      </div>
+
+      <!-- INDUSTRIAL -->
+      <div class="ppack reveal">
+        <div class="ppack-badge">// Industriale & aziendale</div>
+        <div class="ppack-tipo">Enterprise</div>
+        <div class="ppack-sub">Capannoni, magazzini, sedi aziendali</div>
+        <div class="ppack-price">Su preventivo</div>
+        <div class="ppack-price-label">progetto personalizzato</div>
+        <div class="ppack-row"><span class="lbl">Telecamere</span><span class="vl">Illimitate (IP PTZ)</span></div>
+        <div class="ppack-row"><span class="lbl">Registrazione</span><span class="vl">Server NAS dedicato</span></div>
+        <div class="ppack-row"><span class="lbl">Antifurto</span><span class="vl ok">✔ Perimetrale</span></div>
+        <div class="ppack-row"><span class="lbl">Controllo accessi</span><span class="vl ok">✔ Multi-zona</span></div>
+        <div class="ppack-row"><span class="lbl">Vigilanza attiva</span><span class="vl ok">✔ H24 con istituto</span></div>
+        <div class="ppack-row"><span class="lbl">Ronde virtuali</span><span class="vl ok">✔ Incluse</span></div>
+        <div class="ppack-footer">
+          <strong>Ideale per:</strong> capannone, magazzino, sede aziendale, grande distribuzione.
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<div class="ediv"></div>
+
+<!-- ── NORMATIVA ── -->
+<section id="normativa">
+  <div class="max-w">
+    <div class="norm-wrap">
+      <div>
+        <p class="sec-label reveal">// 04 — Normativa e certificazioni</p>
+        <h2 class="sec-title reveal">Lavoriamo <span class="acc">a Norma</span></h2>
+        <div class="sec-line reveal"></div>
+
+        <div class="norm-list">
+          <div class="norm-item reveal">
+            <div class="norm-code">CEI 79-3</div>
+            <div>
+              <div class="norm-title">Impianti di allarme intrusione</div>
+              <div class="norm-desc">Norma italiana di riferimento per la progettazione, installazione e manutenzione di impianti antifurto e antintrusione. Tutti i nostri sistemi rispettano i gradi di sicurezza G1–G3.</div>
+            </div>
+          </div>
+          <div class="norm-item reveal">
+            <div class="norm-code">EN 50132</div>
+            <div>
+              <div class="norm-title">Sistemi di videosorveglianza CCTV</div>
+              <div class="norm-desc">Standard europeo per i sistemi di sorveglianza video negli edifici. Regolamenta la qualità delle immagini, l'archiviazione e la trasmissione dei dati video.</div>
+            </div>
+          </div>
+          <div class="norm-item reveal">
+            <div class="norm-code">GDPR</div>
+            <div>
+              <div class="norm-title">Protezione dati e privacy</div>
+              <div class="norm-desc">Gli impianti di videosorveglianza devono rispettare il Regolamento Europeo sulla Privacy. Ti forniamo la segnaletica obbligatoria e indicazioni per la corretta informativa agli interessati.</div>
+            </div>
+          </div>
+          <div class="norm-item reveal">
+            <div class="norm-code">D.M. 37/08</div>
+            <div>
+              <div class="norm-title">Dichiarazione di Conformità</div>
+              <div class="norm-desc">Come per tutti gli impianti elettrici, rilasciamo la Dichiarazione di Conformità (DiCo) per ogni impianto di sicurezza installato. Documento obbligatorio per legge e indispensabile per assicurazioni.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="garanzie-box reveal">
+        <div class="gbox-title">Le nostre <span>Garanzie</span></div>
+        <div class="gbox-sub">Sicurezza reale, non solo apparente. Ogni impianto viene testato a fondo prima della consegna, con documentazione completa.</div>
+        <div class="gbox-row">
+          <div><strong>2 anni di garanzia sull'impianto</strong>Interveniamo gratuitamente su qualsiasi malfunzionamento legato all'installazione.</div>
+        </div>
+        <div class="gbox-row">
+          <div><strong>Dichiarazione di Conformità (DiCo)</strong>Obbligatoria per legge. Necessaria per polizze furto, pratiche assicurative e rogiti immobiliari.</div>
+        </div>
+        <div class="gbox-row">
+          <div><strong>Formazione all'uso inclusa</strong>Ti spieghiamo come usare il sistema, inserire e disinserire l'allarme, gestire le utenze e visualizzare le registrazioni.</div>
+        </div>
+        <div class="gbox-row">
+          <div><strong>Marchi certificati</strong>Utilizziamo solo apparecchiature di marchi leader: Hikvision, Dahua, Paradox, Risco, Ajax, Urmet, BTicino.</div>
+        </div>
+        <div class="gbox-row">
+          <div><strong>Contratto manutenzione annuale</strong>Disponibile un piano di assistenza con visita annuale, aggiornamenti firmware e priorità sugli interventi.</div>
+        </div>
+        <div style="margin-top:24px;">
+          <a href="#cta-finale" class="btn-p" style="display:block; text-align:center;">🔒 Richiedi Preventivo Gratuito</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="ediv"></div>
+
+<!-- ── GALLERY ── -->
+<section id="gallery">
+  <div class="max-w">
+    <div style="margin-bottom:36px;" class="reveal">
+      <p class="sec-label">// 05 — I nostri lavori</p>
+      <h2 class="sec-title">Galleria <span class="acc">Installazioni</span></h2>
+      <div class="sec-line"></div>
+    </div>
+
+    <div class="gallery-grid">
+      <div class="gphoto tall reveal">
+        <img src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80" alt="Centrale allarme installata">
+        <div class="gphoto-overlay"><span class="gphoto-label">Centrale antifurto multi-zona</span></div>
+      </div>
+      <div class="gphoto reveal">
+        <img src="https://images.unsplash.com/photo-1573804633927-bfcbcd909acd?w=600&q=80" alt="Telecamere di sorveglianza">
+        <div class="gphoto-overlay"><span class="gphoto-label">Telecamere IP FullHD esterne</span></div>
+      </div>
+      <div class="gphoto reveal">
+        <img src="https://images.unsplash.com/photo-1531297484001-80022131f5a1?w=600&q=80" alt="Monitor videosorveglianza">
+        <div class="gphoto-overlay"><span class="gphoto-label">Postazione di controllo NVR</span></div>
+      </div>
+      <div class="gphoto reveal">
+        <img src="https://images.unsplash.com/photo-1555774698-0b77e0d5fac6?w=600&q=80" alt="Sensori di movimento">
+        <div class="gphoto-overlay"><span class="gphoto-label">Sensori volumetrici doppia tecnologia</span></div>
+      </div>
+      <div class="gphoto reveal">
+        <img src="https://images.unsplash.com/photo-1563986768494-4dee2763ff3f?w=600&q=80" alt="Controllo accessi badge">
+        <div class="gphoto-overlay"><span class="gphoto-label">Lettore badge RFID con videocitofono</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="ediv"></div>
+
+<!-- ── CTA FINALE ── -->
+<section id="cta-finale">
+  <div class="cta-box reveal">
+    <div class="cta-emoji">🔒</div>
+    <h2 class="cta-title">Proteggi quello che<br><span>conta davvero</span></h2>
+    <p class="cta-sub">
+      Contattaci per un sopralluogo gratuito e senza impegno.<br>
+      Progettiamo il sistema su misura per la tua casa o azienda — zero sorprese sul preventivo.
+    </p>
+    <a href="tel:3801420557" class="btn-p" style="font-size:13px; padding:16px 40px;">
+      🔒 Chiama Ora — 380 142 0557
+    </a>
+    <div class="cta-contacts">
+      <a href="tel:3801420557" class="ct-link">
+        <span style="font-size:1.3rem;">📞</span>
+        <div>
+          <div class="ct-link-label">Telefono</div>
+          <div class="ct-link-val">380 142 0557</div>
+        </div>
+      </a>
+      <a href="mailto:impianti.mnc@gmail.com" class="ct-link">
+        <span style="font-size:1.3rem;">✉️</span>
+        <div>
+          <div class="ct-link-label">Email</div>
+          <div class="ct-link-val">impianti.mnc@gmail.com</div>
+        </div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ── FOOTER ── -->
+<footer>
+  <div class="foot-copy">© 2025 MNC Impianti Elettrici — P.IVA ______</div>
+  <div class="foot-tag">🔴 SISTEMA ATTIVO ▮</div>
+</footer>
+
+<script>
+// SCROLL REVEAL
+const obs = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if(e.isIntersecting) { e.target.classList.add('visible'); obs.unobserve(e.target); }
+  });
+}, { threshold:0.07 });
+document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+</script>
+
+</body>
+</html>
